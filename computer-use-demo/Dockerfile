@@ -76,7 +76,7 @@ ENV USERNAME=computeruse
 ENV HOME=/home/$USERNAME
 RUN useradd -m -s /bin/bash -d $HOME $USERNAME && \
     # Add user to all relevant system groups
-    usermod -aG sudo,adm,docker,plugdev,netdev $USERNAME && \
+    usermod -aG sudo,adm,docker $USERNAME && \
     # Setup enhanced sudo permissions
     echo "# Full sudo access for computeruse user" > /etc/sudoers.d/computeruse && \
     echo "$USERNAME ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers.d/computeruse && \
