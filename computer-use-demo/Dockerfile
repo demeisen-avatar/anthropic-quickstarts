@@ -3,10 +3,24 @@ FROM docker.io/ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV DEBIAN_PRIORITY=high
 
+# Add Docker's official GPG key and repository
+RUN apt-get update && \
+    apt-get -y install ca-certificates curl gnupg && \
+    install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    chmod a+r /etc/apt/keyrings/docker.gpg && \
+    echo "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
 RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get -y install \
     build-essential \
+    # Docker packages
+    docker-ce \
+    docker-ce-cli \
+    containerd.io \
+    docker-buildx-plugin \
+    docker-compose-plugin \
     # UI Requirements
     xvfb \
     xterm \
@@ -57,11 +71,21 @@ RUN git clone --branch v1.5.0 https://github.com/novnc/noVNC.git /opt/noVNC && \
     git clone --branch v0.12.0 https://github.com/novnc/websockify /opt/noVNC/utils/websockify && \
     ln -s /opt/noVNC/vnc.html /opt/noVNC/index.html
 
-# setup user
+# setup user with full administrative capabilities
 ENV USERNAME=computeruse
 ENV HOME=/home/$USERNAME
-RUN useradd -m -s /bin/bash -d $HOME $USERNAME
-RUN echo "${USERNAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+RUN useradd -m -s /bin/bash -d $HOME $USERNAME && \
+    # Add user to all relevant system groups
+    usermod -aG sudo,adm,docker,plugdev,netdev $USERNAME && \
+    # Setup enhanced sudo permissions
+    echo "# Full sudo access for computeruse user" > /etc/sudoers.d/computeruse && \
+    echo "$USERNAME ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers.d/computeruse && \
+    chmod 0440 /etc/sudoers.d/computeruse && \
+    # Create docker socket directory with proper permissions
+    mkdir -p /var/run/docker && \
+    chown $USERNAME:docker /var/run/docker && \
+    # Ensure home directory has correct permissions
+    chown -R $USERNAME:$USERNAME $HOME
 USER computeruse
 WORKDIR $HOME
 
