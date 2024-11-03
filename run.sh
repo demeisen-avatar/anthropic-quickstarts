@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# Source port configuration
+source .ports || {
+    echo "Error: Failed to load port configuration from .ports"
+    exit 1
+}
+
 # Check for API key
 if [ -z "$ANTHROPIC_API_KEY" ]; then
     echo "Please set ANTHROPIC_API_KEY environment variable"
@@ -14,15 +20,15 @@ docker rm -f test 2>/dev/null || true
 # Start container
 docker run -d \
     -e ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
-    -p 5900:5901 \
-    -p 8501:8501 \
-    -p 6080:6081 \
-    -p 8080:8081 \
+    -p ${PORT_VNC_EXTERNAL}:${PORT_VNC_INTERNAL} \
+    -p ${PORT_STREAMLIT_EXTERNAL}:${PORT_STREAMLIT_INTERNAL} \
+    -p ${PORT_NOVNC_EXTERNAL}:${PORT_NOVNC_INTERNAL} \
+    -p ${PORT_HTTP_EXTERNAL}:${PORT_HTTP_INTERNAL} \
     --name test \
     test
 
 echo "✨ Computer Use Demo is ready!"
-echo "➡️  Open http://localhost:8080 in your browser to begin"
+echo "➡️  Open http://localhost:${PORT_HTTP_EXTERNAL} in your browser to begin"
 
 # Show logs
 docker logs -f test
